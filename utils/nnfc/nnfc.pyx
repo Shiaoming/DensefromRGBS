@@ -86,7 +86,7 @@ def _nn_fill_c(double[:,::1] depth, uint8[:,::1] pattern_mask, int search_mode):
                                         min_dis2 = dis2
                                         min_val = val
                         jj = -range_jj
-                        for ii in range(-range_ii, range_ii + 1):
+                        for ii in range(-range_ii+1, range_ii):
                             # in_image_flag = 0
                             # image range
                             srch_i, srch_j = i + ii, j + jj
@@ -99,7 +99,7 @@ def _nn_fill_c(double[:,::1] depth, uint8[:,::1] pattern_mask, int search_mode):
                                         min_dis2 = dis2
                                         min_val = val
                         jj = -range_jj
-                        for ii in range(-range_ii, range_ii + 1):
+                        for ii in range(-range_ii+1, range_ii):
                             # in_image_flag = 0
                             # image range
                             srch_i, srch_j = i + ii, j + jj
