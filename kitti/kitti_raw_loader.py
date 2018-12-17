@@ -1,3 +1,6 @@
+'''
+Modified from https://github.com/tinghuiz/SfMLearner/blob/master/data/kitti/kitti_raw_loader.py
+'''
 from __future__ import division
 import numpy as np
 from path import Path
@@ -6,9 +9,6 @@ from collections import Counter
 import sys
 import copy
 
-# import matplotlib
-# Force matplotlib to not use any Xwindows backend.
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 sys.path.append('../')
@@ -343,9 +343,6 @@ class KittiRawLoader(object):
 
 
 if __name__ == "__main__":
-    # import os
-    #
-    # print(os.environ['DISPLAY'])
 
     data_loader = KittiRawLoader('/home/zxm/dataset/kitti_raw', img_height=240, img_width=320)
 
@@ -355,6 +352,7 @@ if __name__ == "__main__":
 
     for i in range(10):
         img, depth, ptsim = data_loader.get_one_example()
+
         # plt.subplot(211)
         # plt.imshow(img)
         # plt.subplot(212)
@@ -366,22 +364,3 @@ if __name__ == "__main__":
         np.save('../kitti_test_imgs/depth{}.npy'.format(i), depth)
         np.save('../kitti_test_imgs/ptsim{}.npy'.format(i), ptsim)
 
-    # for _ in range(10):
-    #     s_idx = np.random.randint(0, len(data_loader.scenes))
-    #     idx = np.random.randint(0, data_loader.scenes[s_idx][0]['num'])
-    #
-    #     print('Idx: {}'.format(idx))
-    #
-    #     img, P = data_loader.load_image(data_loader.scenes[s_idx][0], idx)
-    #     depth, velo, crop_velo = data_loader.generate_depth_map(data_loader.scenes[s_idx][0], idx, P)
-    #
-    #     # draw_lidar_simple(velo)
-    #     draw_lidar_simple(crop_velo)
-    #
-    #     print("crop_P_rect:")
-    #     print(P)
-    #     plt.subplot(121)
-    #     plt.imshow(img)
-    #     plt.subplot(122)
-    #     plt.imshow(depth)
-    #     plt.show()

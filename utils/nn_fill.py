@@ -7,23 +7,46 @@ import matplotlib.pyplot as plt
 from utils.nnfc.nnfc import _nn_fill_c
 
 
-def NN_fill(image, depth, pattern_mask=None):
+def NN_fill(image, depth, pattern_mask=None, mode="Nearest"):
+    '''
+    Nearest depth fill using pattern_mask.
+
+    Args:
+        image: RGB image
+        depth: dense depth map (should be the same size as RGB image)
+        pattern_mask: sparse points (if None, it will be the non-zero points of depth)
+        mode: 'Nearest' for fill the zero points using nearest search,'Sparse' for compare with all points in mask pattren
+
+    Returns:
+        NN fill map `s1` and euclidean distance transforms `s2`
+    '''
     assert image.shape[0:2] == depth.shape[0:2]
+    assert mode == "Nearest" or mode == "Sparse"
 
     if pattern_mask == None:
         pattern_mask = np.where(depth > 0, True, False)
 
-    image = np.array(image, dtype=np.uint8)
     depth = np.array(depth, dtype=np.float)
     pattern_mask = np.array(pattern_mask, dtype=np.uint8)
 
-    s1, s2 = _nn_fill_c(image, depth, pattern_mask)
+    s_mode = 0
+    if mode == "Nearest":
+        s_mode = 0
+    elif mode == "Sparse":
+        s_mode = 1
+
+    s1, s2 = _nn_fill_c(depth, pattern_mask, s_mode)
 
     return s1, s2
 
 
 def sparse_inputs(img, depth, mask, Ah, Aw):
-    """ Generate sparse inputs
+    """
+    From: https://github.com/kvmanohar22/sparse_depth_sensing/blob/master/utils/utils.py
+
+    This implementation is memory inefficient.
+
+    Generate sparse inputs
     Args:
         img  : input image
         depth: ground truth depth map for the given image
@@ -61,16 +84,12 @@ def sparse_inputs(img, depth, mask, Ah, Aw):
         idx_to_depth[i] = x * W + y
 
     Sh, Sw = np.array(Sh), np.array(Sw)
-    # Sh = Sh[None, None, ...]
-    # Sh = np.tile(Sh, [H, W])
-    # Sw = Sw[None, None, ...]
-    # Sw = np.tile(Sw, [H, W])
     Hd, Wd = np.empty((H, W)), np.empty((H, W))
     Hd.T[:, ] = np.arange(H)
     Wd[:, ] = np.arange(W)
     Hd, Wd = Hd[..., None], Wd[..., None]
-    Hd2 = np.square(Hd - Sh)
-    Wd2 = np.square(Wd - Sw)
+    Hd2 = np.square(Hd - Sh)  # This two broadcast will consume lots of memory
+    Wd2 = np.square(Wd - Sw)  # when the number of sparse points and image size a little bit larger
     dmap = np.sqrt(Hd2 + Wd2)
     dmap_arg = np.argmin(dmap, axis=-1)
     dmap_arg = dmap_arg.ravel()
@@ -106,5 +125,4 @@ if __name__ == "__main__":
         plt.imshow(s1)
         plt.subplot(224)
         plt.imshow(s2)
-        # plt.colorbar()
         plt.show()

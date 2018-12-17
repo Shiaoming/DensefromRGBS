@@ -11,16 +11,23 @@ ctypedef np.uint8_t uint8
 
 DTYPE = np.float
 
-
 @cython.boundscheck(False) # Deactivate bounds checking
 @cython.wraparound(False) # Deactivate negative indexing
-def _nn_fill_c(uint8[:,:,::1] image, double[:,::1] depth, uint8[:,::1] pattern_mask):
+def _nn_fill_c(double[:,::1] depth, uint8[:,::1] pattern_mask, int search_mode):
     '''
-    :param image:
-    :param depth:
-    :param pattern_mask:
-    :return:
+    Nearest depth fill using pattern_mask.
+
+    Args:
+        depth: dense depth map
+        pattern_mask: sparse points (should be the same size as depth)
+        mode: 0 for fill the zero points using nearest search,1 for compare with all points in mask pattren
+
+    Returns:
+        NN fill map `s1` and euclidean distance transforms `s2`
     '''
+    assert tuple(depth.shape) == tuple(pattern_mask.shape)
+    assert search_mode == 0 or search_mode == 1
+
     cdef Py_ssize_t h, w
 
     h = depth.shape[0]
@@ -51,69 +58,71 @@ def _nn_fill_c(uint8[:,:,::1] image, double[:,::1] depth, uint8[:,::1] pattern_m
                     # in_image_flag = 0
 
                     # nearnst search
-                    ii = -range_ii
-                    for jj in range(-range_jj, range_jj + 1):
-                        # in_image_flag = 0
-                        # image range
-                        srch_i, srch_j = i + ii, j + jj
-                        if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
-                            # in_image_flag = 1
-                            if pattern_mask[srch_i, srch_j] == 1:
-                                dis2 = ii * ii + jj * jj
-                                val = depth[srch_i, srch_j]
-                                if dis2 < min_dis2:
-                                    min_dis2 = dis2
-                                    min_val = val
-                    ii = range_ii
-                    for jj in range(-range_jj, range_jj + 1):
-                        # in_image_flag = 0
-                        # image range
-                        srch_i, srch_j = i + ii, j + jj
-                        if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
-                            # in_image_flag = 1
-                            if pattern_mask[srch_i, srch_j] == 1:
-                                dis2 = ii * ii + jj * jj
-                                val = depth[srch_i, srch_j]
-                                if dis2 < min_dis2:
-                                    min_dis2 = dis2
-                                    min_val = val
-                    jj = -range_jj
-                    for ii in range(-range_ii, range_ii + 1):
-                        # in_image_flag = 0
-                        # image range
-                        srch_i, srch_j = i + ii, j + jj
-                        if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
-                            # in_image_flag = 1
-                            if pattern_mask[srch_i, srch_j] == 1:
-                                dis2 = ii * ii + jj * jj
-                                val = depth[srch_i, srch_j]
-                                if dis2 < min_dis2:
-                                    min_dis2 = dis2
-                                    min_val = val
-                    jj = -range_jj
-                    for ii in range(-range_ii, range_ii + 1):
-                        # in_image_flag = 0
-                        # image range
-                        srch_i, srch_j = i + ii, j + jj
-                        if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
-                            # in_image_flag = 1
-                            if pattern_mask[srch_i, srch_j] == 1:
-                                dis2 = ii * ii + jj * jj
-                                val = depth[srch_i, srch_j]
-                                if dis2 < min_dis2:
-                                    min_dis2 = dis2
-                                    min_val = val
+                    if search_mode == 0:
+                        ii = -range_ii
+                        for jj in range(-range_jj, range_jj + 1):
+                            # in_image_flag = 0
+                            # image range
+                            srch_i, srch_j = i + ii, j + jj
+                            if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
+                                # in_image_flag = 1
+                                if pattern_mask[srch_i, srch_j] == 1:
+                                    dis2 = ii * ii + jj * jj
+                                    val = depth[srch_i, srch_j]
+                                    if dis2 < min_dis2:
+                                        min_dis2 = dis2
+                                        min_val = val
+                        ii = range_ii
+                        for jj in range(-range_jj, range_jj + 1):
+                            # in_image_flag = 0
+                            # image range
+                            srch_i, srch_j = i + ii, j + jj
+                            if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
+                                # in_image_flag = 1
+                                if pattern_mask[srch_i, srch_j] == 1:
+                                    dis2 = ii * ii + jj * jj
+                                    val = depth[srch_i, srch_j]
+                                    if dis2 < min_dis2:
+                                        min_dis2 = dis2
+                                        min_val = val
+                        jj = -range_jj
+                        for ii in range(-range_ii, range_ii + 1):
+                            # in_image_flag = 0
+                            # image range
+                            srch_i, srch_j = i + ii, j + jj
+                            if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
+                                # in_image_flag = 1
+                                if pattern_mask[srch_i, srch_j] == 1:
+                                    dis2 = ii * ii + jj * jj
+                                    val = depth[srch_i, srch_j]
+                                    if dis2 < min_dis2:
+                                        min_dis2 = dis2
+                                        min_val = val
+                        jj = -range_jj
+                        for ii in range(-range_ii, range_ii + 1):
+                            # in_image_flag = 0
+                            # image range
+                            srch_i, srch_j = i + ii, j + jj
+                            if srch_i >= 0 and srch_i < h and srch_j >= 0 and srch_j < w:
+                                # in_image_flag = 1
+                                if pattern_mask[srch_i, srch_j] == 1:
+                                    dis2 = ii * ii + jj * jj
+                                    val = depth[srch_i, srch_j]
+                                    if dis2 < min_dis2:
+                                        min_dis2 = dis2
+                                        min_val = val
 
                     # compare the empty points with all mask points
-                    # for ii in range(h):
-                    #     for jj in range(w):
-                    #         if pattern_mask[ii,jj] == 1 and depth[ii,jj] != 0:
-                    #             dis2 = (ii-i)*(ii-i)+(jj-j)*(jj-j)
-                    #             val = depth[ii,jj]
-                    #
-                    #             if dis2 < min_dis2:
-                    #                 min_dis2 = dis2
-                    #                 min_val = val
+                    elif search_mode == 1:
+                        for ii in range(h):
+                            for jj in range(w):
+                                if pattern_mask[ii,jj] == 1 and depth[ii,jj] != 0:
+                                    dis2 = (ii-i)*(ii-i)+(jj-j)*(jj-j)
+                                    val = depth[ii,jj]
+
+                                    if dis2 < min_dis2:
+                                        min_dis2 = dis2
+                                        min_val = val
 
                     # if in_image_flag == 0:
                     #     break
