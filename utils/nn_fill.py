@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.nnfc.nnfc import _nn_fill_c
 
+import time
+
 
 def NN_fill(image, depth, pattern_mask=None, mode="Nearest"):
     '''
@@ -101,7 +103,7 @@ def sparse_inputs(img, depth, mask, Ah, Aw):
 
 if __name__ == "__main__":
 
-    test_dir = '/mnt/dDocuments/PycharmProjects/prj/DensefromRGBS/kitti_test_imgs'
+    test_dir = '../kitti_test_imgs'
     for i in range(10):
         image = np.load(test_dir + '/image{}.npy'.format(i))
         depth = np.load(test_dir + '/depth{}.npy'.format(i))
@@ -110,7 +112,10 @@ if __name__ == "__main__":
         # mask = np.where(depth > 0, True, False)
         # s1, s2 = sparse_inputs(image, depth, mask, 1, 1)
 
+        t1 = time.time()
         s1, s2 = NN_fill(image, depth)
+        t2 = time.time()
+        print('Spend {}'.format(t2-t1))
 
         max_depth = np.max(depth)
         depth_show = np.copy(depth)

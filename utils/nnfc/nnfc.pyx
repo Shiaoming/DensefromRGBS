@@ -28,7 +28,7 @@ def _nn_fill_c(double[:,::1] depth, uint8[:,::1] pattern_mask, int search_mode):
     assert tuple(depth.shape) == tuple(pattern_mask.shape)
     assert search_mode == 0 or search_mode == 1
 
-    cdef Py_ssize_t h, w
+    cdef int h, w
 
     h = depth.shape[0]
     w = depth.shape[1]
@@ -42,9 +42,9 @@ def _nn_fill_c(double[:,::1] depth, uint8[:,::1] pattern_mask, int search_mode):
     # for ....
 
     # define variables
-    cdef float dis2, val, min_dis2, min_val, MAX_DIS2
-    cdef Py_ssize_t range_ii, range_jj, srch_i, srch_j
-    cdef int in_image_flag,ii,jj
+    cdef double dis2, val, min_dis2, min_val, MAX_DIS2
+    cdef int range_ii, range_jj, srch_i, srch_j
+    cdef int in_image_flag,i,j,ii,jj
 
     MAX_DIS2 = h*h+w*w+1
 

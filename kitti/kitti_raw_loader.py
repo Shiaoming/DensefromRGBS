@@ -2,17 +2,16 @@
 Modified from https://github.com/tinghuiz/SfMLearner/blob/master/data/kitti/kitti_raw_loader.py
 '''
 from __future__ import division
-import numpy as np
 from path import Path
+import imageio
 import scipy.misc
 from collections import Counter
 import sys
-import copy
 
 import matplotlib.pyplot as plt
 
 sys.path.append('../')
-from kitti.viz_utility import *
+from utils.viz_utility import *
 
 
 def rotx(t):
@@ -240,7 +239,7 @@ class KittiRawLoader(object):
         img_file = scene['dir'] / 'image_{}'.format(scene['cid']) / 'data' / '{:010d}.png'.format(idx)
         if not img_file.isfile():
             return None
-        img = scipy.misc.imread(img_file)
+        img = imageio.imread(img_file)
         P_rect = np.copy(scene['P_rect'])
 
         if self.img_height > img.shape[0]:
@@ -344,6 +343,7 @@ class KittiRawLoader(object):
 
 if __name__ == "__main__":
 
+    # data_loader = KittiRawLoader('F:/kitti-raw-uncompressed', img_height=480, img_width=640)
     data_loader = KittiRawLoader('/home/zxm/dataset/kitti_raw', img_height=240, img_width=320)
 
     print("Total samples: {}".format(data_loader.total_samples))
@@ -353,14 +353,14 @@ if __name__ == "__main__":
     for i in range(10):
         img, depth, ptsim = data_loader.get_one_example()
 
-        # plt.subplot(211)
-        # plt.imshow(img)
-        # plt.subplot(212)
-        # plt.imshow(depth)
-        # plt.show()
+        plt.subplot(211)
+        plt.imshow(img)
+        plt.subplot(212)
+        plt.imshow(depth)
+        plt.show()
 
         # save for latter test
-        np.save('../kitti_test_imgs/image{}.npy'.format(i), img)
-        np.save('../kitti_test_imgs/depth{}.npy'.format(i), depth)
-        np.save('../kitti_test_imgs/ptsim{}.npy'.format(i), ptsim)
+        # np.save('../kitti_test_imgs/image{}.npy'.format(i), img)
+        # np.save('../kitti_test_imgs/depth{}.npy'.format(i), depth)
+        # np.save('../kitti_test_imgs/ptsim{}.npy'.format(i), ptsim)
 
