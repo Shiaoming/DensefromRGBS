@@ -205,18 +205,35 @@ def project_depth_map(rgb, imgDepth):
     goodmask = (u >= 0) & (u < w) & (v >= 0) & (v < h)
     good_uvz = prjuvz[goodmask, :]
 
+    # the order from far to near, using depth order is a more efficient way
+    # to project to image plane when depth is dense. In kitti dataset, the depth is sparse,
+    # the duplicated way is more faster, while in nyv2 dataset, the order way is faster
+    order = np.argsort(-good_uvz[:, 2])
     # project to image
     depthOut = np.zeros((h, w)).astype(np.float32)
-    depthOut[good_uvz[:, 1].astype(np.int), good_uvz[:, 0].astype(np.int)] = good_uvz[:, 2]
+    for idx in range(order.shape[0]):
+        v = good_uvz[order[idx], 1].astype(np.int)
+        u = good_uvz[order[idx], 0].astype(np.int)
+        depthOut[v, u] = good_uvz[order[idx], 2]
 
-    # find the duplicate points and choose the closest depth
-    inds = sub2ind(depthOut.shape, good_uvz[:, 1].astype(np.int), good_uvz[:, 0].astype(np.int))
-    dupe_inds = [item for item, count in Counter(inds).items() if count > 1]
-    for dd in dupe_inds:
-        pts = np.where(inds == dd)[0]
-        v_loc = int(good_uvz[pts[0], 1])
-        u_loc = int(good_uvz[pts[0], 0])
-        depthOut[v_loc, u_loc] = good_uvz[pts, 2].min()
+    # depthOut[good_uvz[:, 1].astype(np.int), good_uvz[:, 0].astype(np.int)] = good_uvz[:, 2]
+    #
+    # # find the duplicate points and choose the closest depth
+    # inds = sub2ind(depthOut.shape, good_uvz[:, 1].astype(np.int), good_uvz[:, 0].astype(np.int))
+    # dupe_inds = [item for item, count in Counter(inds).items() if count > 1]
+    #
+    # # this for-loop is the most time consuming
+    # import time
+    # t2 = time.time()
+    # for dd in dupe_inds:
+    #     t1 = time.time()
+    #     print("Forloop time: {}".format((t1 - t2)*1000))
+    #     pts = np.where(inds == dd)[0]
+    #     v_loc = int(good_uvz[pts[0], 1])
+    #     u_loc = int(good_uvz[pts[0], 0])
+    #     depthOut[v_loc, u_loc] = good_uvz[pts, 2].min()
+    #     t2 = time.time()
+    #     print("Process time: {}".format((t2 - t1)*1000))
 
     # Fix weird values...
     depthOut[depthOut > maxDepth] = maxDepth

@@ -308,7 +308,16 @@ class KittiRawLoader(object):
         val_inds = val_inds & (velo_pts_im[:, 1] < self.img_height)
         velo_pts_im = velo_pts_im[val_inds, :]
 
-        # crop_velo = velo[val_inds, :]
+        # # the order from far to near, using depth order is a more efficient way
+        # # to project to image plane when depth is dense, in kitti dataset, the depth is sparse,
+        # # so the duplicated way is more faster
+        # order = np.argsort(-velo_pts_im[:, 2])
+        # # project to image
+        # depth = np.zeros((self.img_height, self.img_width)).astype(np.float32)
+        # for idx in range(order.shape[0]):
+        #     v = velo_pts_im[order[idx], 1].astype(np.int)
+        #     u = velo_pts_im[order[idx], 0].astype(np.int)
+        #     depth[v, u] = velo_pts_im[order[idx], 2]
 
         # project to image
         depth = np.zeros((self.img_height, self.img_width)).astype(np.float32)
@@ -343,15 +352,19 @@ class KittiRawLoader(object):
 
 if __name__ == "__main__":
 
-    # data_loader = KittiRawLoader('F:/kitti-raw-uncompressed', img_height=480, img_width=640)
-    data_loader = KittiRawLoader('/home/zxm/dataset/kitti_raw', img_height=240, img_width=320)
+    data_loader = KittiRawLoader('F:/kitti-raw-uncompressed', img_height=480, img_width=640)
+    # data_loader = KittiRawLoader('/home/zxm/dataset/kitti_raw', img_height=240, img_width=320)
 
     print("Total samples: {}".format(data_loader.total_samples))
 
     Path.makedirs_p(Path('../kitti_test_imgs'))
 
     for i in range(10):
+        import time
+        t1 = time.time()
         img, depth, ptsim = data_loader.get_one_example()
+        t2 = time.time()
+        print("Load time: {}s".format(t2 - t1))
 
         plt.subplot(211)
         plt.imshow(img)
@@ -360,7 +373,7 @@ if __name__ == "__main__":
         plt.show()
 
         # save for latter test
-        # np.save('../kitti_test_imgs/image{}.npy'.format(i), img)
-        # np.save('../kitti_test_imgs/depth{}.npy'.format(i), depth)
-        # np.save('../kitti_test_imgs/ptsim{}.npy'.format(i), ptsim)
+        np.save('../kitti_test_imgs/image{}.npy'.format(i), img)
+        np.save('../kitti_test_imgs/depth{}.npy'.format(i), depth)
+        np.save('../kitti_test_imgs/ptsim{}.npy'.format(i), ptsim)
 

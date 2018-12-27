@@ -8,15 +8,17 @@ from utils.nnfc.nnfc import _nn_fill_c
 
 import time
 
+from tqdm import tqdm
 
-def NN_fill(image, depth, pattern_mask=None, mode="Nearest"):
+
+def NN_fill(image, depth, mask=None, mode="Nearest"):
     '''
     Nearest depth fill using pattern_mask.
 
     Args:
         image: RGB image
         depth: dense depth map (should be the same size as RGB image)
-        pattern_mask: sparse points (if None, it will be the non-zero points of depth)
+        mask: sparse points (if None, it will be the non-zero points of depth)
         mode: 'Nearest' for fill the zero points using nearest search,'Sparse' for compare with all points in mask pattren
 
     Returns:
@@ -25,11 +27,14 @@ def NN_fill(image, depth, pattern_mask=None, mode="Nearest"):
     assert image.shape[0:2] == depth.shape[0:2]
     assert mode == "Nearest" or mode == "Sparse"
 
-    if pattern_mask == None:
-        pattern_mask = np.where(depth > 0, True, False)
+    H, W = depth.shape
+
+    valid_depth_points = depth > 0
+    if mask is None:
+        mask = valid_depth_points
 
     depth = np.array(depth, dtype=np.float)
-    pattern_mask = np.array(pattern_mask, dtype=np.uint8)
+    mask = np.array(mask, dtype=np.uint8)
 
     s_mode = 0
     if mode == "Nearest":
@@ -37,9 +42,27 @@ def NN_fill(image, depth, pattern_mask=None, mode="Nearest"):
     elif mode == "Sparse":
         s_mode = 1
 
-    s1, s2 = _nn_fill_c(depth, pattern_mask, s_mode)
+    s1, s2 = _nn_fill_c(depth, mask, s_mode)
 
     return s1, s2
+
+
+def generate_mask(Ah, Aw, H, W):
+    """
+    Modified from: https://github.com/kvmanohar22/sparse_depth_sensing/blob/master/utils/utils.py
+    Generates mask for the depth data Sparsity is: depth_values
+    Args:
+        Ah: Downsampling factor along h
+        Aw: Downsampling factor along w
+        H : Image height
+        W : Image width
+    Returns:
+        binary mask of dimensions (H, W) where 1 equals
+        denotes actual ground truth data is retained
+    """
+    mask = np.zeros((H, W))
+    mask[0:None:Ah, 0:None:Aw] = 1
+    return mask
 
 
 def sparse_inputs(img, depth, mask, Ah, Aw):
@@ -103,29 +126,36 @@ def sparse_inputs(img, depth, mask, Ah, Aw):
 
 if __name__ == "__main__":
 
-    test_dir = '../kitti_test_imgs'
+    # test_dataset = 'kitti'
+    test_dataset = 'nyuv2'
+
+    if test_dataset == 'kitti':
+        test_dir = '../kitti_test_imgs'
+    elif test_dataset == 'nyuv2':
+        test_dir = '../nyuv2_test_imgs'
+    else:
+        exit(-1)
+
     for i in range(10):
         image = np.load(test_dir + '/image{}.npy'.format(i))
         depth = np.load(test_dir + '/depth{}.npy'.format(i))
-        ptsim = np.load(test_dir + '/ptsim{}.npy'.format(i))
 
-        # mask = np.where(depth > 0, True, False)
-        # s1, s2 = sparse_inputs(image, depth, mask, 1, 1)
+        if test_dataset == 'nyuv2':
+            mask = generate_mask(40, 40, image.shape[0], image.shape[1])
+            _mask = mask.copy()
 
         t1 = time.time()
-        s1, s2 = NN_fill(image, depth)
+        if test_dataset == 'kitti':
+            s1, s2 = NN_fill(image, depth)
+        else:
+            s1, s2 = NN_fill(image, depth, mask, 'Sparse')
         t2 = time.time()
-        print('Spend {}'.format(t2-t1))
-
-        max_depth = np.max(depth)
-        depth_show = np.copy(depth)
-        depth_show = np.where(depth_show == 0, max_depth, depth_show)
-        depth_show = max_depth - depth_show
+        print('Spend {}'.format(t2 - t1))
 
         plt.subplot(221)
         plt.imshow(image)
         plt.subplot(222)
-        plt.imshow(depth_show)
+        plt.imshow(depth)
         plt.subplot(223)
         plt.imshow(s1)
         plt.subplot(224)

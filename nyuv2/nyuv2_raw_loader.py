@@ -2,7 +2,10 @@ from __future__ import division
 import numpy as np
 from path import Path
 import imageio
+import time
+import sys
 
+sys.path.append('../')
 from nyuv2.nyuv2_utility import project_depth_map
 import matplotlib.pyplot as plt
 
@@ -71,20 +74,25 @@ class NYUV2RawLoader(object):
 
         return img, depth_prj
 
-
 if __name__ == "__main__":
-    # data_loader = NYUV2RawLoader('F:/nuy_depth_v2/raw')
-    data_loader = NYUV2RawLoader('/mnt/dDATASETS/nuy_depth_v2/raw')
+    data_loader = NYUV2RawLoader('F:/nuy_depth_v2/raw')
+    # data_loader = NYUV2RawLoader('/mnt/dDATASETS/nuy_depth_v2/raw')
 
     print("Total samples: {}".format(data_loader.total_samples))
 
     Path.makedirs_p(Path('../nyuv2_test_imgs'))
 
-    for i in range(3):
+    for i in range(10):
+        t1 = time.time()
         img, depth = data_loader.get_one_example()
+        t2 = time.time()
+        print("Load time: {}s".format(t2 - t1))
 
         plt.subplot(121)
         plt.imshow(img)
         plt.subplot(122)
         plt.imshow(depth)
         plt.show()
+
+        np.save('../nyuv2_test_imgs/image{}.npy'.format(i), img)
+        np.save('../nyuv2_test_imgs/depth{}.npy'.format(i), depth)
