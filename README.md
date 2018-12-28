@@ -1,6 +1,3 @@
-### Brief
-Implementation of paper "Estimating Depth from RGB and Sparse Sensing" with pytorch.
-
 ### Main work
 
 ##### Dataset loader
