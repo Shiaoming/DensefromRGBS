@@ -8,8 +8,6 @@ from utils.nnfc.nnfc import _nn_fill_c
 
 import time
 
-from tqdm import tqdm
-
 
 def NN_fill(image, depth, mask=None, mode="Nearest"):
     '''
@@ -27,11 +25,8 @@ def NN_fill(image, depth, mask=None, mode="Nearest"):
     assert image.shape[0:2] == depth.shape[0:2]
     assert mode == "Nearest" or mode == "Sparse"
 
-    H, W = depth.shape
-
-    valid_depth_points = depth > 0
     if mask is None:
-        mask = valid_depth_points
+        mask = depth > 0
 
     depth = np.array(depth, dtype=np.float)
     mask = np.array(mask, dtype=np.uint8)
@@ -140,24 +135,36 @@ if __name__ == "__main__":
         image = np.load(test_dir + '/image{}.npy'.format(i))
         depth = np.load(test_dir + '/depth{}.npy'.format(i))
 
-        if test_dataset == 'nyuv2':
-            mask = generate_mask(40, 40, image.shape[0], image.shape[1])
-            _mask = mask.copy()
+        # if test_dataset == 'nyuv2':
+        mask = generate_mask(24, 24, image.shape[0], image.shape[1])
+        _mask = mask.copy()
 
         t1 = time.time()
         if test_dataset == 'kitti':
-            s1, s2 = NN_fill(image, depth)
+            s1, s2 = NN_fill(image, depth, mask)
         else:
-            s1, s2 = NN_fill(image, depth, mask, 'Sparse')
+            s1, s2 = NN_fill(image, depth, mask)
         t2 = time.time()
         print('Spend {}'.format(t2 - t1))
 
         plt.subplot(221)
         plt.imshow(image)
+        plt.title('RGB')
+        plt.axis('off')
+
         plt.subplot(222)
         plt.imshow(depth)
+        plt.title('Depth')
+        plt.axis('off')
+
         plt.subplot(223)
         plt.imshow(s1)
+        plt.title('S1')
+        plt.axis('off')
+
         plt.subplot(224)
         plt.imshow(s2)
+        plt.title('S2')
+        plt.axis('off')
+
         plt.show()

@@ -53,6 +53,7 @@ def _nn_fill_c(double[:,::1] depth, uint8[:,::1] mask, int search_mode):
                 # search...
                 new_i, new_j = 0, 0
                 range_ii, range_jj = 1, 1
+                min_dis2 = MAX_DIS2
                 while min_dis2 == MAX_DIS2:
                     # in_image_flag = 0
                     # nearnst search
