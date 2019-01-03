@@ -60,14 +60,15 @@ def pc_viewer(points, mode="sphere",seg=None, color_map=None, figure=None, show=
 
 def draw_lidar_simple(pc, color=None):
     ''' Draw lidar points. simplest set up. '''
-    fig = mayavi.mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1600, 1000))
-    if color is None: color = pc[:,2]
-    #draw points
-    mayavi.mlab.points3d(pc[:,0], pc[:,1], pc[:,2], color, color=None, mode='point', colormap = 'gnuplot', scale_factor=1, figure=fig)
-    #draw origin
-    mayavi.mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2)
-    #draw axis
-    mayavi.mlab.orientation_axes()
+    if vis_ok:
+        fig = mayavi.mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1600, 1000))
+        if color is None: color = pc[:,2]
+        #draw points
+        mayavi.mlab.points3d(pc[:,0], pc[:,1], pc[:,2], color, color=None, mode='point', colormap = 'gnuplot', scale_factor=1, figure=fig)
+        #draw origin
+        mayavi.mlab.points3d(0, 0, 0, color=(1,1,1), mode='sphere', scale_factor=0.2)
+        #draw axis
+        mayavi.mlab.orientation_axes()
 
-    mayavi.mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
-    return fig
+        mayavi.mlab.view(azimuth=180, elevation=70, focalpoint=[ 12.0909996 , -1.04700089, -2.03249991], distance=62.0, figure=fig)
+        return fig

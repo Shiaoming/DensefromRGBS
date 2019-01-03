@@ -3,7 +3,7 @@ import sys
 sys.path.append('../')
 
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from utils.nnfc.nnfc import _nn_fill_c
 
 import time
@@ -147,24 +147,24 @@ if __name__ == "__main__":
         t2 = time.time()
         print('Spend {}'.format(t2 - t1))
 
-        plt.subplot(221)
-        plt.imshow(image)
-        plt.title('RGB')
-        plt.axis('off')
-
-        plt.subplot(222)
-        plt.imshow(depth)
-        plt.title('Depth')
-        plt.axis('off')
-
-        plt.subplot(223)
-        plt.imshow(s1)
-        plt.title('S1')
-        plt.axis('off')
-
-        plt.subplot(224)
-        plt.imshow(s2)
-        plt.title('S2')
-        plt.axis('off')
-
-        plt.show()
+        # plt.subplot(221)
+        # plt.imshow(image)
+        # plt.title('RGB')
+        # plt.axis('off')
+        #
+        # plt.subplot(222)
+        # plt.imshow(depth)
+        # plt.title('Depth')
+        # plt.axis('off')
+        #
+        # plt.subplot(223)
+        # plt.imshow(s1)
+        # plt.title('S1')
+        # plt.axis('off')
+        #
+        # plt.subplot(224)
+        # plt.imshow(s2)
+        # plt.title('S2')
+        # plt.axis('off')
+        #
+        # plt.show()
