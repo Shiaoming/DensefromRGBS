@@ -334,8 +334,9 @@ class KittiRawLoader(object):
         depth[depth < 0] = 0
         return depth, velo_pts_im  # original_velo, crop_velo
 
-    def get_one_example(self):
-        idx = np.random.randint(0, self.total_samples)
+    def get_one_example(self,idx=None):
+        if idx is None:
+            idx = np.random.randint(0, self.total_samples)
 
         # print("idx: {}".format(idx))
         img, depth, velo_pts_im = None, None, None
