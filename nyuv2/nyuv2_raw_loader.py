@@ -3,11 +3,14 @@ import numpy as np
 from path import Path
 import imageio
 import time
+import os
 import sys
 
 sys.path.append('../')
 from nyuv2.nyuv2_utility import project_depth_map
-import matplotlib.pyplot as plt
+
+
+# import matplotlib.pyplot as plt
 
 
 class NYUV2RawLoader(object):
@@ -51,30 +54,42 @@ class NYUV2RawLoader(object):
             self.total_samples += len(s['data'])
 
     def collect_scenes(self, scene_dir):
-        scenes_index_file = scene_dir / 'INDEX.txt'
-        indices = open(scenes_index_file)
+        try:
+            scenes_index_file = scene_dir / 'INDEX.txt'
+            indices = open(scenes_index_file)
+        except FileNotFoundError:
+            scenes_index_file = scene_dir / 'index.txt'
+            indices = open(scenes_index_file)
 
         i = 0
         scene_data = {'dir': scene_dir, 'num': 0, 'data': []}
         frame = {}
+
         for line in indices:
-            if line.startswith('d-'):
-                frame['depth'] = line.strip()
-            elif line.startswith('r-'):
-                frame['rgb'] = line.strip()
+            line = line.strip()
+            if os.path.exists(scene_dir / line):
 
-                depth_timestamp = float(frame['depth'].split('-')[1])
-                rgb_timestamp = float(frame['rgb'].split('-')[1])
+                if line.startswith('d-'):
+                    frame['depth'] = line
+                elif line.startswith('r-'):
+                    frame['rgb'] = line
 
-                # 50ms
-                if (abs(depth_timestamp - rgb_timestamp) < 0.05):
-                    i += 1
-                    scene_data['data'].append(frame.copy())
-                    frame.clear()
+                    if 'depth' in frame and 'rgb' in frame:
+                        try:
+                            depth_timestamp = float(frame['depth'].split('-')[1])
+                            rgb_timestamp = float(frame['rgb'].split('-')[1])
+                        except ValueError:
+                            continue
+
+                        # 50ms
+                        if (abs(depth_timestamp - rgb_timestamp) < 0.05):
+                            i += 1
+                            scene_data['data'].append(frame.copy())
+                            frame.clear()
 
         return scene_data
 
-    def get_one_example(self,idx=None):
+    def get_one_example(self, idx=None):
         assert self.total_samples > 0
         if idx is None:
             idx = np.random.randint(0, self.total_samples)
@@ -107,12 +122,12 @@ if __name__ == "__main__":
         img, depth = data_loader.get_one_example()
         t2 = time.time()
         print("Load time: {}s".format(t2 - t1))
-
-        plt.subplot(121)
-        plt.imshow(img)
-        plt.subplot(122)
-        plt.imshow(depth)
-        plt.show()
+        #
+        # plt.subplot(121)
+        # plt.imshow(img)
+        # plt.subplot(122)
+        # plt.imshow(depth)
+        # plt.show()
 
         np.save('../nyuv2_test_imgs/image{}.npy'.format(i), img)
         np.save('../nyuv2_test_imgs/depth{}.npy'.format(i), depth)

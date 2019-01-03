@@ -3,8 +3,8 @@ Python version of nyu toolbox rgb and depth image undistort, depth image project
 '''
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from utils.viz_utility import *
+# import matplotlib.pyplot as plt
+# from utils.viz_utility import pc_viewer
 
 # The maximum depth used, in meters.
 maxDepth = 10
@@ -257,12 +257,12 @@ if __name__ == "__main__":
     imageio.imsave("rgb.png", rgb_undistort)
     imageio.imsave("dep.png", dep)
 
-    plt.subplot(221)
-    plt.imshow(image)
-    plt.subplot(222)
-    plt.imshow(depth)
-    plt.subplot(223)
-    plt.imshow(rgb_undistort)
-    plt.subplot(224)
-    plt.imshow(depth_prj)
-    plt.show()
+    # plt.subplot(221)
+    # plt.imshow(image)
+    # plt.subplot(222)
+    # plt.imshow(depth)
+    # plt.subplot(223)
+    # plt.imshow(rgb_undistort)
+    # plt.subplot(224)
+    # plt.imshow(depth_prj)
+    # plt.show()
