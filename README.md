@@ -11,8 +11,10 @@ so one can not obtain crop image with size `480x640` from the original image.
 There will be a resize in image and the lidar points can not fill upper part of the image.
 - NYUv2
 
-In NYUv2 there only 1449 full filled depth image in file `nyu_depth_v2_labeled.mat`,
-the raw depth in raw data have zeros areas. By the way, the paper says "missing
+In NYUv2 there are only 1449 clean RGBD image in file `nyu_depth_v2_labeled.mat`,
+but the raw depth in raw data projected to rgb image plane have zeros areas around the border.
+After crop using official tool box, the image size should be `561x427`.
+By the way, the paper says "missing
 depth values are filled using *Colorization using optimization*", which not implemented here.
 
 ##### NN fill
@@ -40,12 +42,12 @@ Moreover, the description of loss function is just one line explanation
 "*We use Adam [15] as our optimizer, and standard pixel-wise L2 loss to train*".
 
 ##### Train
-Not implemented yet.
+Add train scripts for NYUv2 dataset.
 
 ### Setup
 
 ```bash
 git clone https://github.com/Shiaoming/DensefromRGBS.git
 cd DensefromRGBS
-python setup.py build_ext --inplace
+./setup.sh
 ```
