@@ -1,10 +1,13 @@
 import argparse
 import logging
+import sys
 import os
 import numpy as np
 import time
 import copy
 import random
+
+os.environ['QT_QPA_PLATFORM']='offscreen'
 
 import torch
 import torch.optim as optim
@@ -13,6 +16,9 @@ from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms
 from tensorboardX import SummaryWriter
 
+# import matplotlib; matplotlib.use('agg')
+
+sys.path.append('./')
 from nyuv2.nyuv2_raw_loader import NYUV2RawLoader
 from module.d3 import D3
 from utils.log_helper import init_log, print_speed
@@ -22,17 +28,18 @@ from utils.nn_fill import NN_fill, generate_mask
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--batch_size', default=4, type=int, metavar='N', help='mini-batch size (default: 4)')
-parser.add_argument('--dataset_dir', default="/mnt/dDATASETS/nyu_depth_v2/raw", help='dataset directory ')
+parser.add_argument('--workers', default=4, type=int, metavar='N', help='mini-batch size (default: 4)')
+parser.add_argument('--dataset_dir', default="/home/zxm/dataset/dataset/nyuv2/nyu_depth_v2", help='dataset directory ')
 parser.add_argument('--save_dir', default='./checkpoints', help='directory to save models')
 parser.add_argument('--summary_dir', default='./runs', help='directory to save summary, can load by tensorboard')
 parser.add_argument('--resume', default='./checkpoints/model_best.pth', type=str,
                     help='path to latest checkpoint (default: none)')
-parser.add_argument('--batches', default=80000, type=int, metavar='N', help='number of total batches to run')
+parser.add_argument('--epoches', default=20, type=int, metavar='N', help='number of total epoches to run')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='initial learning rate')
 parser.add_argument('--lr_decay', '--lr_decay', default=0.2, type=float, help='learning rate decay')
-parser.add_argument('--lr_decay_step', default=25000, type=float, help='learning rate decay every 25000 steps')
-parser.add_argument('--test_rate', default=100, type=int, help='run test every test_rate batches')
-parser.add_argument('--log_rate', default=100, type=int, help='save model every log_rate batches')
+parser.add_argument('--lr_decay_step', default=8, type=float, help='learning rate decay every 8 epoches')
+parser.add_argument('--test_rate', default=1, type=int, help='run test every test_rate epoches')
+parser.add_argument('--log_rate', default=1, type=int, help='save model every log_rate epoches')
 
 args = parser.parse_args()
 
@@ -134,7 +141,7 @@ def l2_loss(gt, pred):
         valid_gt = current_gt[valid]
         valid_pred = current_pred[valid].clamp(1e-3, 80)
 
-        total_points = total_points + torch.sum(valid)
+        total_points = total_points + torch.sum(valid).type(torch.cuda.FloatTensor)
         loss = loss + torch.sum((valid_gt - valid_pred) * (valid_gt - valid_pred))
 
     loss = loss / total_points
@@ -148,10 +155,10 @@ def build_nyu_dataloader(dataset_dir):
     trans = transforms.Compose([HFlips(), ToTensor()])
 
     train_nyu_dataset = NYU_Dataset(dataset_dir, "train", trans)
-    train_nyu_loader = DataLoader(train_nyu_dataset, batch_size=args.batch_size, num_workers=4)
+    train_nyu_loader = DataLoader(train_nyu_dataset, batch_size=args.batch_size, num_workers=args.workers)
 
     test_nyu_dataset = NYU_Dataset(dataset_dir, "test")
-    test_nyu_loader = DataLoader(test_nyu_dataset, batch_size=args.batch_size, num_workers=4)
+    test_nyu_loader = DataLoader(test_nyu_dataset, batch_size=args.batch_size, num_workers=args.workers)
 
 
     logger.info('Build nyu dataloader done')
@@ -176,12 +183,12 @@ def main():
     model = D3(opts)
 
     # check GPU numbers and deploy parallel
-    parallel = False
-    if torch.cuda.device_count() > 1:
-        parallel = True
-        logger.info("Let's use {:d} GPUs!".format(torch.cuda.device_count()))
-        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        model = nn.DataParallel(model)
+    # parallel = False
+    # if torch.cuda.device_count() > 1:
+    #     parallel = True
+    #     logger.info("Let's use {:d} GPUs!".format(torch.cuda.device_count()))
+    #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+    #     model = nn.DataParallel(model)
     model.to(device)
 
     logger.info("*" * 40)
@@ -201,42 +208,26 @@ def main():
     best_abs_rel = 0.0
     logger.info("Start training...")
 
-    epoches = args.batches // train_loader.__len__()
+    # epoches = args.batches // train_loader.__len__()
 
-    for epoch in range(epoches):
+    for epoch in range(args.epoches):
 
         for g in optimizer.param_groups:
-            lr_decay_epoch = train_loader.__len__() // args.lr_decay_step
-            if lr_decay_epoch <= 1:
-                lr_decay_epoch = 1
-            else:
-                lr_decay_epoch = int(lr_decay_epoch)
-            g['lr'] = args.lr * (1 - args.lr_decay) ** (epoch // lr_decay_epoch)
+            g['lr'] = args.lr * (1 - args.lr_decay) ** (epoch // args.lr_decay_step)
         writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch)
 
         t0 = time.time()
         train_one_epoch(train_loader, model, optimizer, device, epoch)
         t1 = time.time()
 
-        test_rate_epoch = args.test_rate // train_loader.__len__()
-        if test_rate_epoch <= 1:
-            test_rate_epoch = 1
-        else:
-            test_rate_epoch = int(test_rate_epoch)
-
-        if epoch % test_rate_epoch == 0:
+        if epoch % args.test_rate == 0:
             test_abs_rel = test_one_epoch(test_loader, model, device, epoch)
             if test_abs_rel < best_abs_rel:
                 best_model_wts = copy.deepcopy(model.state_dict())
 
         torch.cuda.empty_cache()
 
-        log_rate_epoch = train_loader.__len__() // args.log_rate
-        if log_rate_epoch <= 1:
-            log_rate_epoch = 1
-        else:
-            log_rate_epoch = int(log_rate_epoch)
-        if epoch % log_rate_epoch == 0:
+        if epoch % args.test_rate == 0:
             filename = os.path.join(args.save_dir, 'checkpoint_e%d.pth' % (epoch + 1))
             save_checkpoint(
                 {
@@ -249,7 +240,7 @@ def main():
             )
             logger.info("Saved model : {}".format(filename))
 
-        print_speed(epoch, t1 - t0, epoches)
+        print_speed(epoch, t1 - t0, args.epoches)
 
         save_checkpoint(
             {
@@ -272,10 +263,14 @@ def train_one_epoch(train_loader, model, optimizer, device, epoch):
     num_batches = 0.0
 
     for i_batch, sample_batched in enumerate(train_loader):
+        t0 = time.time()
+
         rgb = sample_batched['rgb'].type(torch.FloatTensor)
         depth = sample_batched['depth']
         s1 = sample_batched['s1'].type(torch.FloatTensor)
         s2 = sample_batched['s2'].type(torch.FloatTensor)
+
+        b = rgb.shape[0]
 
         rgb = rgb.to(device)
         depth = depth.to(device)
@@ -313,6 +308,9 @@ def train_one_epoch(train_loader, model, optimizer, device, epoch):
         a1 += a10
         a2 += a20
         a3 += a30
+
+        t1 = time.time()
+        print_speed(i_batch, t1 - t0, train_loader.__len__())
 
     lossitem = lossitem / num_batches
     abs_diff = abs_diff / num_batches
