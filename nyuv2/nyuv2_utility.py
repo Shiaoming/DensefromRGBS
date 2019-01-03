@@ -4,7 +4,6 @@ Python version of nyu toolbox rgb and depth image undistort, depth image project
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import Counter
 from utils.viz_utility import *
 
 # The maximum depth used, in meters.

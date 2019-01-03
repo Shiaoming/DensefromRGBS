@@ -13,8 +13,23 @@ import matplotlib.pyplot as plt
 class NYUV2RawLoader(object):
     def __init__(self,
                  dataset_dir,
+                 mode='train',
                  get_acc=False):
+        assert mode == 'train' or mode == 'test'
+
         self.dataset_dir = Path(dataset_dir)
+
+        if mode == 'train':
+            f = open('nyuv2/train_scenes.txt')
+            self.scenes_list = [line.strip() for line in f.readlines()]
+            f.close()
+        elif mode == 'test':
+            f = open('nyuv2/test_scenes.txt')
+            self.scenes_list = [line.strip() for line in f.readlines()]
+            f.close()
+        else:
+            raise ValueError('Mode must be train or test.')
+
         self.get_acc = get_acc
 
         self.collect_files()
@@ -23,9 +38,11 @@ class NYUV2RawLoader(object):
         self.scenes = []
         scene_set = self.dataset_dir.dirs()
         for scene_dir in scene_set:
-            s = self.collect_scenes(scene_dir)
-            if len(s) > 0:
-                self.scenes.append(s)
+            scene_name = scene_dir.basename()
+            if scene_name in self.scenes_list:
+                s = self.collect_scenes(scene_dir)
+                if len(s) > 0:
+                    self.scenes.append(s)
 
         self.total_samples = 0
         # count the samples
@@ -57,16 +74,18 @@ class NYUV2RawLoader(object):
 
         return scene_data
 
-    def get_one_example(self):
-        idx = np.random.randint(0, self.total_samples)
+    def get_one_example(self,idx=None):
+        assert self.total_samples > 0
+        if idx is None:
+            idx = np.random.randint(0, self.total_samples)
 
         img, depth_prj = None, None
         for s in self.scenes:
-            if idx > s['acc_num'] and idx <= s['acc_num'] + len(s['data']):
+            if idx >= s['acc_num'] and idx <= s['acc_num'] + len(s['data']):
                 idx = idx - s['acc_num'] - 1
-                print("idx: {}".format(idx))
-                print(s['dir'] / s['data'][idx]['rgb'])
-                print(s['dir'] / s['data'][idx]['depth'])
+                # print("idx: {}".format(idx))
+                # print(s['dir'] / s['data'][idx]['rgb'])
+                # print(s['dir'] / s['data'][idx]['depth'])
                 img_raw = imageio.imread(s['dir'] / s['data'][idx]['rgb'])
                 depth_raw = imageio.imread(s['dir'] / s['data'][idx]['depth'])
                 img, depth, depth_prj = project_depth_map(img_raw, depth_raw)
@@ -74,9 +93,10 @@ class NYUV2RawLoader(object):
 
         return img, depth_prj
 
+
 if __name__ == "__main__":
-    data_loader = NYUV2RawLoader('F:/nuy_depth_v2/raw')
-    # data_loader = NYUV2RawLoader('/mnt/dDATASETS/nuy_depth_v2/raw')
+    data_loader = NYUV2RawLoader('F:/nyu_depth_v2/raw')
+    # data_loader = NYUV2RawLoader('/mnt/dDATASETS/nyu_depth_v2/raw')
 
     print("Total samples: {}".format(data_loader.total_samples))
 
