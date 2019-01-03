@@ -12,8 +12,6 @@ class D3(nn.Module):
         self.k = opts['k']
         self.bn = opts['bn']
 
-        self.downsample_half = nn.UpsamplingBilinear2d(scale_factor=0.5)
-
         self.conv1 = nn.Conv2d(5, 64, kernel_size=3, stride=2, padding=1)
 
         # DenseNet Block 1
@@ -89,13 +87,13 @@ class D3(nn.Module):
         h = torch.relu(self.conv1(torch.cat((img, sparse_inputs), 1)))
 
         # Dense1
-        x240 = self.downsample_half(sparse_inputs)
+        x240 = nn.functional.interpolate(sparse_inputs,scale_factor=0.5,mode="bilinear",align_corners=True)
         h = torch.relu(self.d1_conv1(h))
         h = self.dense1(h, x240)
         h = torch.relu(self.d1_conv2(h))
 
         # Skip Dense 2
-        x120 = self.downsample_half(x240)
+        x120 = nn.functional.interpolate(x240,scale_factor=0.5,mode="bilinear",align_corners=True)
         skip_h2 = torch.relu(self.d2c_conv1(h))
         skip_h2 = self.dense2c(skip_h2, x120)
         skip_h2 = torch.relu(self.d2c_conv2(skip_h2))
@@ -106,7 +104,7 @@ class D3(nn.Module):
         h = torch.relu(self.d2_conv2(h))
 
         # Skip Dense 3
-        x60 = self.downsample_half(x120)
+        x60 = nn.functional.interpolate(x120,scale_factor=0.5,mode="bilinear",align_corners=True)
         skip_h3 = torch.relu(self.d3c_conv1(h))
         skip_h3 = self.dense3c(skip_h3, x60)
         skip_h3 = torch.relu(self.d3c_conv2(skip_h3))
@@ -117,13 +115,13 @@ class D3(nn.Module):
         h = torch.relu(self.d3_conv2(h))
 
         # Skip Dense 4
-        x30 = self.downsample_half(x60)
+        x30 = nn.functional.interpolate(x60,scale_factor=0.5,mode="bilinear",align_corners=True)
         skip_h4 = torch.relu(self.d4c_conv1(h))
         skip_h4 = self.dense4c(skip_h4, x30)
         skip_h4 = torch.relu(self.d4c_conv2(skip_h4))
 
         # Dense 4
-        x15 = self.downsample_half(x30)
+        x15 = nn.functional.interpolate(x30,scale_factor=0.5,mode="bilinear",align_corners=True)
         h = torch.relu(self.d4_conv1(h))
         h = self.dense4(h, x30)
         h = torch.relu(self.d4_conv2(h))
