@@ -14,8 +14,7 @@ import numpy
 # )
 
 setup(
-    ext_modules=cythonize(["utils/nnfc/nnfc.pyx",
-                           "nyuv2/nyuv2_utility.py"],
+    ext_modules=cythonize(["utils/nnfc/nnfc.pyx"],
                           annotate=True),
     include_dirs=[numpy.get_include()]
 )
