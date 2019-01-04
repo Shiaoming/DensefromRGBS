@@ -1,3 +1,6 @@
+### Brief
+Implementation of paper "Estimating Depth from RGB and Sparse Sensing" with pytorch.
+
 ### Main work
 
 ##### Dataset loader
@@ -39,7 +42,9 @@ Moreover, the description of loss function is just one line explanation
 "*We use Adam [15] as our optimizer, and standard pixel-wise L2 loss to train*".
 
 ##### Train
-Add train scripts for NYUv2 dataset.
+Not implemented yet.
+
+TODO: change train loop iteration time from epoches to batches
 
 ### Setup
 
